@@ -1,0 +1,35 @@
+import { z } from 'zod';
+
+export const registerSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+  username: z.string().min(3, 'Username must be at least 3 characters').max(50),
+});
+
+export const loginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+// Platform-specific auth schemas
+export const platformLoginSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export const platformRefreshSchema = z.object({
+  refresh_token: z.string().min(1, 'Refresh token is required'),
+});
+
+export const transcodeSchema = z.object({
+  inputUrl: z.string().url('Must be a valid URL'),
+  format: z.string().default('mp4'),
+  quality: z
+    .enum(['low', 'medium', 'high', 'ultra'])
+    .default('medium'),
+});
+
+export const streamSchema = z.object({
+  url: z.string().url('Must be a valid URL'),
+  platform: z.string().default('generic'),
+});

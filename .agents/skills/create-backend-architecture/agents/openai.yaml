@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Create backend architecture'
+  short_description: 'implement a backend architecture for this product request.'
+  default_prompt: 'Use $create-backend-architecture to design a backend architecture for this product request.'
