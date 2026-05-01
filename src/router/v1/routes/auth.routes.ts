@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import passport from 'passport';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   registerSchema,
   loginSchema,
@@ -93,6 +96,33 @@ function isValidPlatform(platform: string): platform is Platform {
   return SUPPORTED_PLATFORMS.includes(platform as Platform);
 }
 
+type BootstrapCredentials = {
+  access_token?: string;
+  refresh_token?: string;
+  token_type?: string;
+  expires_in?: number;
+};
+
+async function readBootstrapCredentials(): Promise<BootstrapCredentials | null> {
+  const routeDir = path.dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    path.resolve(routeDir, '../../../../credentials.json'),
+    path.resolve(process.cwd(), 'credentials.json'),
+    path.resolve(process.cwd(), 'webos-backend/credentials.json'),
+  ];
+
+  for (let i = 0; i < candidates.length; i += 1) {
+    try {
+      const raw = await fs.readFile(candidates[i], 'utf8');
+      return JSON.parse(raw) as BootstrapCredentials;
+    } catch {
+      // Try next candidate path.
+    }
+  }
+
+  return null;
+}
+
 // POST /auth/:platform/login
 authRouter.post('/:platform/login', async (req: Request, res: Response) => {
   const { platform } = req.params;
@@ -117,6 +147,63 @@ authRouter.post('/:platform/login', async (req: Request, res: Response) => {
     const msg = err instanceof Error ? err.message : 'Login failed';
     const status = /unauthorized|invalid/i.test(msg) ? httpStatus.UNAUTHORIZED : httpStatus.INTERNAL_SERVER_ERROR;
     return res.status(status).json(error(msg, status));
+  }
+});
+
+// GET /auth/:platform/bootstrap
+authRouter.get('/:platform/bootstrap', async (req: Request, res: Response) => {
+  const { platform } = req.params;
+
+  if (!isValidPlatform(platform)) {
+    return res.status(httpStatus.BAD_REQUEST).json(
+      error('Unsupported platform', httpStatus.BAD_REQUEST)
+    );
+  }
+
+  if (platform !== 'crunchyroll') {
+    return res.status(httpStatus.BAD_REQUEST).json(
+      error('Bootstrap session unavailable for platform', httpStatus.BAD_REQUEST)
+    );
+  }
+
+  const fileCredentials = await readBootstrapCredentials();
+  const accessToken = fileCredentials?.access_token || process.env.CR_ACCESS_TOKEN;
+  const refreshToken = fileCredentials?.refresh_token || process.env.CR_REFRESH_TOKEN || '';
+  const tokenType = fileCredentials?.token_type || process.env.CR_TOKEN_TYPE || 'Bearer';
+  const expiresIn = Number(fileCredentials?.expires_in || process.env.CR_EXPIRES_IN) || 300;
+
+  if (!accessToken) {
+    return res.status(httpStatus.NOT_FOUND).json(
+      error('No bootstrap session configured', httpStatus.NOT_FOUND)
+    );
+  }
+
+  try {
+    const accountId = process.env.CR_ACCOUNT_ID || '';
+    const country = process.env.CR_COUNTRY || '';
+    const profile = await platformAuth.getProfile(platform, accessToken);
+
+    return res.status(httpStatus.OK).json(
+      success(
+        {
+          platform,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          token_type: tokenType,
+          expires_in: expiresIn,
+          account_id: accountId || profile.account_id,
+          country: country || profile.country || '',
+          obtained_at: Date.now(),
+          user: profile,
+        },
+        httpStatus.OK
+      )
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Bootstrap session unavailable';
+    return res.status(httpStatus.UNAUTHORIZED).json(
+      error(msg, httpStatus.UNAUTHORIZED)
+    );
   }
 });
 

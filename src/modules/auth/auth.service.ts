@@ -1,10 +1,38 @@
 import bcrypt from 'bcryptjs';
 import crypto from 'node:crypto';
 
-import { UserCreate, UserPublic, User, JwtPayload } from './auth.types';
-import { env } from '../../config/env';
+import { UserCreate, UserPublic, User } from './auth.types';
 
 const USERS_DB: Map<string, User> = new Map();
+const DEMO_PASSWORD_HASH = bcrypt.hashSync('demo123', 10);
+const DEFAULT_USERS = [
+  { email: 'user@crunchyroll.com', username: 'CrunchyFan' },
+  { email: 'user@netflix.com', username: 'NetflixViewer' },
+  { email: 'user@disney.com', username: 'DisneyLover' },
+  { email: 'user@amazon.com', username: 'PrimeMember' },
+  { email: 'user@hbo.com', username: 'HBOFan' },
+  { email: 'user@paramount.com', username: 'ParamountUser' },
+  { email: 'user@starplus.com', username: 'StarPlusFan' },
+  { email: 'user@magis.com', username: 'MagisUser' },
+];
+
+function seedUsers(): void {
+  if (USERS_DB.size > 0) return;
+
+  for (const userData of DEFAULT_USERS) {
+    const id = crypto.randomUUID();
+    USERS_DB.set(id, {
+      id,
+      email: userData.email,
+      username: userData.username,
+      passwordHash: DEMO_PASSWORD_HASH,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+  }
+}
+
+seedUsers();
 
 export class UserService {
   static async create(createData: UserCreate): Promise<UserPublic> {

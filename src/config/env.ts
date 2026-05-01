@@ -11,4 +11,12 @@ export const env = {
   crBasicAuth: process.env.CR_BASIC_AUTH || 'Basic aHJobzlxM2F3dnNrMjJ1LXRzNWE6cHROOURteXRBU2Z6QjZvbXVsSzh6cUxzYTczVE1TY1k=',
   crApiBaseUrl: process.env.CR_API_BASE_URL || 'https://beta-api.crunchyroll.com',
   crLogoutUrl: process.env.CR_LOGOUT_URL || 'https://www.crunchyroll.com/logout',
+  crAccessToken: process.env.CR_ACCESS_TOKEN || '',
+  crRefreshToken: process.env.CR_REFRESH_TOKEN || '',
+  crTokenType: process.env.CR_TOKEN_TYPE || 'Bearer',
+  crExpiresIn: Number(process.env.CR_EXPIRES_IN) || 0,
+  crScope: process.env.CR_SCOPE || '',
+  crCountry: process.env.CR_COUNTRY || '',
+  crAccountId: process.env.CR_ACCOUNT_ID || '',
+  crProfileId: process.env.CR_PROFILE_ID || '',
 };

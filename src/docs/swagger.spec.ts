@@ -47,6 +47,7 @@ http://localhost:\${process.env.PORT || 3000}/api/v1
   tags: [
     { name: 'Auth (Local)', description: 'Registro y login con base de datos local (legacy)' },
     { name: 'Auth (Platform)', description: 'Autenticación multi-plataforma (Crunchyroll, Netflix, etc.)' },
+    { name: 'Catalog', description: 'Listado de catálogo, series y búsqueda para el frontend' },
     { name: 'Stream', description: 'Transcodificación y procesamiento de video' },
   ],
   components: {
@@ -511,6 +512,148 @@ Use this when the access token expires (typically after 2 hours).
           '400': { $ref: '#/components/responses/BadRequest' },
           '401': { $ref: '#/components/responses/Unauthorized' },
           '404': { $ref: '#/components/responses/NotFound' },
+          '500': { $ref: '#/components/responses/InternalError' },
+        },
+      },
+    },
+    // ─── Catalog endpoints ───────────────────────────────────────────
+    '/movies/list': {
+      post: {
+        tags: ['Catalog'],
+        summary: 'List catalog items for a platform',
+        description:
+          'Returns paginated catalog items plus categories, seasons and featured content for the selected platform.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  platform: { type: 'string', example: 'crunchyroll' },
+                  page: { type: 'integer', example: 1, default: 1 },
+                  limit: { type: 'integer', example: 20, default: 20 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Catalog payload',
+            content: {
+              'application/json': {
+                schema: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'integer', example: 200 },
+                    data: {
+                      type: 'object',
+                      properties: {
+                        items: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                        categories: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                        seasons: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                        featured: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                        continueWatching: {
+                          type: 'array',
+                          items: { type: 'object', additionalProperties: true },
+                        },
+                        platform: { type: 'string', example: 'crunchyroll' },
+                        page: { type: 'integer', example: 1 },
+                        limit: { type: 'integer', example: 20 },
+                        total: { type: 'integer', example: 8 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '500': { $ref: '#/components/responses/InternalError' },
+        },
+      },
+    },
+    '/movies/series': {
+      post: {
+        tags: ['Catalog'],
+        summary: 'List series items for a platform',
+        description:
+          'Returns the same catalog envelope as /movies/list, intended for series-centric frontend views.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  platform: { type: 'string', example: 'crunchyroll' },
+                  page: { type: 'integer', example: 1, default: 1 },
+                  limit: { type: 'integer', example: 20, default: 20 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Series catalog payload',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Success' },
+              },
+            },
+          },
+          '400': { $ref: '#/components/responses/BadRequest' },
+          '500': { $ref: '#/components/responses/InternalError' },
+        },
+      },
+    },
+    '/movies/search': {
+      post: {
+        tags: ['Catalog'],
+        summary: 'Search catalog items',
+        description:
+          'Searches title, Japanese title, synopsis and genres within the selected platform catalog.',
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['platform', 'q'],
+                properties: {
+                  platform: { type: 'string', example: 'crunchyroll' },
+                  q: { type: 'string', example: 'titan' },
+                  page: { type: 'integer', example: 1, default: 1 },
+                  limit: { type: 'integer', example: 20, default: 20 },
+                },
+              },
+            },
+          },
+        },
+        responses: {
+          '200': {
+            description: 'Search payload',
+            content: {
+              'application/json': {
+                schema: { $ref: '#/components/schemas/Success' },
+              },
+            },
+          },
+          '400': { $ref: '#/components/responses/BadRequest' },
           '500': { $ref: '#/components/responses/InternalError' },
         },
       },

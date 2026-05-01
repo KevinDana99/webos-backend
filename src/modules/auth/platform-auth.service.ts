@@ -19,9 +19,6 @@ export class PlatformAuthService {
       platform: 'crunchyroll' as const,
       baseUrl: env.crApiBaseUrl,
       logoutUrl: env.crLogoutUrl,
-      headers: {
-        Authorization: env.crBasicAuth,
-      },
     };
     this.registerProvider('crunchyroll', new CrunchyrollAuthProvider(crConfig));
 

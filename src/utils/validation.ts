@@ -23,10 +23,13 @@ export const platformRefreshSchema = z.object({
 
 // Video conversion schema
 export const receiveVideoSchema = z.object({
-  url: z.string().url('Must be a valid URL'),
+  url: z.string().url('Must be a valid URL').optional(),
   platform: z.string().default('crunchyroll'),
   quality: z.enum(['low', 'medium', 'high', 'ultra']).default('medium'),
   outputName: z.string().optional(),
+  contentId: z.string().optional(),
+  streamsLink: z.string().optional(),
+  episodeNumber: z.number().int().positive().optional(),
 });
 
 export const transcodeSchema = z.object({
@@ -61,4 +64,3 @@ export const searchSchema = z.object({
   page: z.number().int().positive().default(1),
   limit: z.number().int().positive().min(1).max(100).default(20),
 });
-

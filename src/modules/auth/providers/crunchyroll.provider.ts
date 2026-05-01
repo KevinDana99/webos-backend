@@ -23,10 +23,15 @@ export class CrunchyrollAuthProvider extends BaseAuthProvider {
       profileUrl: config.profileUrl ?? `${CrunchyrollAuthProvider.BETA_API}/accounts/v1/me/profile`,
       headers: {
         ...(config.headers || {}),
-        Authorization: env.crBasicAuth,
       },
     };
     super(mergedConfig);
+  }
+
+  private getClientAuthHeaders(): Record<string, string> {
+    return this.getAuthHeaders({
+      Authorization: env.crBasicAuth,
+    });
   }
 
   async login({ email, password }: PlatformAuthRequest): Promise<AuthTokens & { user: UserProfile }> {
@@ -40,7 +45,7 @@ export class CrunchyrollAuthProvider extends BaseAuthProvider {
 
     const resp = await fetch(endpoint, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers: this.getClientAuthHeaders(),
       body,
     });
 
@@ -100,7 +105,7 @@ export class CrunchyrollAuthProvider extends BaseAuthProvider {
 
     const resp = await fetch(endpoint, {
       method: 'POST',
-      headers: this.getAuthHeaders(),
+      headers: this.getClientAuthHeaders(),
       body,
     });
 
