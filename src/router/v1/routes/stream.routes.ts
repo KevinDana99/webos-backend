@@ -1,11 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { transcodeSchema, streamSchema } from '../../../utils/validation';
+import { transcodeSchema, streamSchema, receiveVideoSchema } from '../../../utils/validation';
 import { TranscoderService } from '../../../services/TranscoderService';
+import { PlatformAuthService } from '../../modules/auth/platform-auth.service';
 import { error, success, httpStatus } from '../../../utils/http';
 import { env } from '../../../config/env';
 
 export const streamRouter = Router();
 const transcoder = new TranscoderService();
+const platformAuth = new PlatformAuthService();
 
 streamRouter.post('/transcode', async (req: Request, res: Response) => {
   try {
@@ -60,6 +62,57 @@ streamRouter.post('/process-hls', async (req: Request, res: Response) => {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : 'HLS processing failed';
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error(message, httpStatus.INTERNAL_SERVER_ERROR));
+  }
+});
+
+// NEW ENDPOINT: Receive video from platform (e.g., Crunchyroll) and convert to MP4
+streamRouter.post('/receive-video', async (req: Request, res: Response) => {
+  try {
+    const result = receiveVideoSchema.safeParse(req.body);
+    if (!result.success) {
+      return res.status(httpStatus.BAD_REQUEST).json(
+        error(result.error.errors[0].message, httpStatus.BAD_REQUEST)
+      );
+    }
+
+    const { url, platform, quality, outputName } = result.data;
+    
+    // Validate platform support
+    const supportedPlatforms = ['crunchyroll'];
+    if (!supportedPlatforms.includes(platform)) {
+      return res.status(httpStatus.BAD_REQUEST).json(
+        error(`Unsupported platform: ${platform}. Supported: ${supportedPlatforms.join(', ')}`, httpStatus.BAD_REQUEST)
+      );
+    }
+
+    // If no output name provided, generate one
+    const finalOutputName = outputName || `received-${platform}-${Date.now()}.mp4`;
+
+    // Convert the video to MP4 with H.264 codec (compatible with Chrome 26)
+    const outputPath = await transcoder.transcode({
+      input: url,
+      output: finalOutputName,
+      codec: 'libx264',  // H.264 for Chrome 26 compatibility
+      quality: quality as 'low' | 'medium' | 'high' | 'ultra',
+      format: 'mp4',
+    });
+
+    return res.status(httpStatus.OK).json(
+      success(
+        { 
+          outputUrl: `/output/${finalOutputName}`, 
+          platform, 
+          quality,
+          path: outputPath,
+          codec: 'libx264',
+          compatible: ['Chrome 26+', 'Safari 5+', 'IE 9+', 'Firefox 3.5+']
+        },
+        httpStatus.OK
+      )
+    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'Video reception failed';
     return res.status(httpStatus.INTERNAL_SERVER_ERROR).json(error(message, httpStatus.INTERNAL_SERVER_ERROR));
   }
 });

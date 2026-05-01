@@ -21,6 +21,14 @@ export const platformRefreshSchema = z.object({
   refresh_token: z.string().min(1, 'Refresh token is required'),
 });
 
+// Video conversion schema
+export const receiveVideoSchema = z.object({
+  url: z.string().url('Must be a valid URL'),
+  platform: z.string().default('crunchyroll'),
+  quality: z.enum(['low', 'medium', 'high', 'ultra']).default('medium'),
+  outputName: z.string().optional(),
+});
+
 export const transcodeSchema = z.object({
   inputUrl: z.string().url('Must be a valid URL'),
   format: z.string().default('mp4'),

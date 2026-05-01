@@ -550,38 +550,93 @@ Transcodes a video (URL or local file) to another format/quality using FFmpeg.
         },
       },
     },
-    '/stream/process-hls': {
-      post: {
-        tags: ['Stream'],
-        summary: 'Process HLS stream to MP4',
-        description: `
+          '/stream/process-hls': {
+            post: {
+              tags: ['Stream'],
+              summary: 'Process HLS stream to MP4',
+              description: `
 Converts an HLS (m3u8) stream to MP4 format. Useful for platforms that deliver HLS (e.g., Crunchyroll).
 
 **Input:** HLS playlist URL  
 **Output:** MP4 file saved to output directory
-        `,
-        requestBody: {
-          required: true,
-          content: {
-            'application/json': {
-              schema: { $ref: '#/components/schemas/ProcessHlsRequest' },
-            },
-          },
-        },
-        responses: {
-          '200': {
-            description: 'HLS processed successfully',
-            content: {
-              'application/json': {
-                schema: { $ref: '#/components/schemas/TranscodeResponse' },
+              `,
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/ProcessHlsRequest' },
+                  },
+                },
+              },
+              responses: {
+                '200': {
+                  description: 'HLS processed successfully',
+                  content: {
+                    'application/json': {
+                      schema: { $ref: '#/components/schemas/TranscodeResponse' },
+                    },
+                  },
+                },
+                '400': { $ref: '#/components/responses/BadRequest' },
+                '500': { $ref: '#/components/responses/InternalError' },
               },
             },
           },
-          '400': { $ref: '#/components/responses/BadRequest' },
-          '500': { $ref: '#/components/responses/InternalError' },
-        },
-      },
-    },
+          '/stream/receive-video': {
+            post: {
+              tags: ['Stream'],
+              summary: 'Receive video from platform and convert to MP4 (H.264)',
+              description: `
+Receives a video URL from a streaming platform (Crunchyroll, etc.) and converts it to MP4 format with H.264 codec.
+
+**Purpose:** Compatible with legacy browsers like Chrome 26 that require H.264 video codec.
+
+**Flow:**
+1. Client sends platform video URL (e.g., HLS manifest from Crunchyroll)
+2. Server transcodes to MP4 with libx264 codec
+3. Returns accessible MP4 stream URL
+
+**Compatibility:** Chrome 26+, Firefox 3.5+, Safari 5+, IE 9+
+              `,
+              requestBody: {
+                required: true,
+                content: {
+                  'application/json': {
+                    schema: { $ref: '#/components/schemas/ReceiveVideoRequest' },
+                  },
+                },
+              },
+              responses: {
+                '200': {
+                  description: 'Video received and converted successfully',
+                  content: {
+                    'application/json': {
+                      schema: {
+                        type: 'object',
+                        properties: {
+                          success: { type: 'boolean', example: true },
+                          data: {
+                            type: 'object',
+                            properties: {
+                              outputUrl: { type: 'string', example: 'http://localhost:3000/output/received-crunchyroll-123456.mp4' },
+                              platform: { type: 'string', example: 'crunchyroll' },
+                              quality: { type: 'string', enum: ['low', 'medium', 'high', 'ultra'] },
+                              path: { type: 'string', example: './output/received-crunchyroll-123456.mp4' },
+                              codec: { type: 'string', example: 'libx264' },
+                              compatible: { type: 'array', items: { type: 'string' }, example: ['Chrome 26+', 'Safari 5+', 'IE 9+', 'Firefox 3.5+'] },
+                            },
+                          },
+                          status: { type: 'integer', example: 200 },
+                        },
+                      },
+                    },
+                  },
+                },
+                '400': { $ref: '#/components/responses/BadRequest' },
+                '500': { $ref: '#/components/responses/InternalError' },
+              },
+            },
+          },
     '/stream/info/{filename}': {
       get: {
         tags: ['Stream'],
