@@ -41,3 +41,24 @@ export const streamSchema = z.object({
   url: z.string().url('Must be a valid URL'),
   platform: z.string().default('generic'),
 });
+
+// Series / Movies schemas
+export const seriesListSchema = z.object({
+  platform: z.string().default('crunchyroll'),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().min(1).max(100).default(20),
+});
+
+export const movieListSchema = z.object({
+  platform: z.string().default('crunchyroll'),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().min(1).max(100).default(20),
+});
+
+export const searchSchema = z.object({
+  platform: z.string().default('crunchyroll'),
+  q: z.string().min(1, 'Search query required'),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().min(1).max(100).default(20),
+});
+
